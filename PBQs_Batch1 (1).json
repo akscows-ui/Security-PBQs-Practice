@@ -1,0 +1,145 @@
+{
+  "title": "Security+ PBQ Sprint — Generated Set 1 (Batch 1)",
+  "timeLimitMin": 25,
+  "questions": [
+    {
+      "id": "g1",
+      "type": "dropdown-grid",
+      "title": "Vanguard Maritime Corp — Segmented Zone Firewall ACL Configuration",
+      "scenario": "Vanguard Maritime Corp operates a segmented enterprise network protected by a stateful perimeter/inter-zone firewall. The firewall evaluates Access Control List (ACL) rules sequentially from top to bottom and enforces an implicit Deny Any Any rule at the end of the ACL.\n\nNetwork Topology & Address Plan:\n• Screening Zone (DMZ) [172.16.40.0/24]:\n  - Customer Tracking Portal: 172.16.40.12\n  - Outbound Mail Relay: 172.16.40.25\n• Operations LAN [172.16.50.0/24]:\n  - Dispatch Workstations & Internal Application Servers\n• Core Data Vault Zone [172.16.80.0/24]:\n  - Microsoft SQL Server Database Host: 172.16.80.44\n• Security & Management Enclave [172.16.200.0/24]:\n  - Admin Jump Workstation: 172.16.200.5\n  - Network Management Server (NMS): 172.16.200.88\n\nSecurity Policy Requirements:\n1. The Customer Tracking Portal in the DMZ must query the Microsoft SQL Server Database Host in the Core Data Vault Zone. No other DMZ host may reach the database server.\n2. Administrators located anywhere on the Security & Management Enclave subnet must be able to remotely administer servers on the Operations LAN using an encrypted command-line shell. Unencrypted remote shells are prohibited.\n3. The Customer Tracking Portal must send automated SNMP trap alerts to the Network Management Server (NMS). No other DMZ hosts are permitted to send SNMP traffic to the NMS.",
+      "instructions": "Configure the three required firewall ACL rules in the table below by selecting the correct Action, Protocol, Source, Destination, and Port for each rule under the principle of least privilege.",
+      "columns": ["Action", "Protocol", "Source", "Destination", "Port"],
+      "colOptions": {
+        "Action": ["Allow", "Deny"],
+        "Protocol": ["TCP", "UDP", "Any"],
+        "Source": [
+          "Any",
+          "172.16.40.0/24",
+          "172.16.40.12",
+          "172.16.40.25",
+          "172.16.50.0/24",
+          "172.16.80.44",
+          "172.16.200.0/24",
+          "172.16.200.88"
+        ],
+        "Destination": [
+          "Any",
+          "172.16.40.0/24",
+          "172.16.40.12",
+          "172.16.50.0/24",
+          "172.16.80.0/24",
+          "172.16.80.44",
+          "172.16.200.0/24",
+          "172.16.200.88"
+        ],
+        "Port": ["Any", "22", "23", "161", "162", "443", "445", "1433"]
+      },
+      "rows": [
+        {
+          "label": "Rule 1 — Authorize DMZ Customer Tracking Portal to query the Core SQL Database Host",
+          "answer": ["Allow", "TCP", "172.16.40.12", "172.16.80.44", "1433"]
+        },
+        {
+          "label": "Rule 2 — Authorize Management Enclave subnet encrypted CLI administration of Operations LAN",
+          "answer": ["Allow", "TCP", "172.16.200.0/24", "172.16.50.0/24", "22"]
+        },
+        {
+          "label": "Rule 3 — Authorize DMZ Customer Tracking Portal to send SNMP trap notifications to the NMS",
+          "answer": ["Allow", "UDP", "172.16.40.12", "172.16.200.88", "162"]
+        }
+      ],
+      "rationale": "Rule 1 requires Allow | TCP | 172.16.40.12 | 172.16.80.44 | 1433. Microsoft SQL Server listens on TCP port 1433. Selecting 172.16.40.0/24 or 172.16.80.0/24 violates least privilege by exposing the entire DMZ or database subnet when only a single host-to-host flow is authorized, and Port Any or 445 (SMB) fails to restrict traffic to SQL Server.\n\nRule 2 requires Allow | TCP | 172.16.200.0/24 | 172.16.50.0/24 | 22. The requirement authorizes the entire Security & Management Enclave subnet (172.16.200.0/24) to manage the Operations LAN (172.16.50.0/24) over SSH (TCP 22). Selecting port 23 enables plaintext Telnet, selecting UDP breaks SSH (which runs over TCP), and selecting 172.16.200.88 restricts access to the NMS host rather than the management subnet.\n\nRule 3 requires Allow | UDP | 172.16.40.12 | 172.16.200.88 | 162. SNMP traps/notifications are sent to the NMS over UDP port 162. Key distractors include TCP 162 (wrong transport protocol for standard SNMP traps), UDP 161 (used for SNMP polling queries rather than traps), TCP 445 (SMB lookalike), and 172.16.40.0/24 (which would allow all DMZ hosts to contact the NMS, violating the single-host restriction)."
+    },
+    {
+      "id": "g2",
+      "type": "order",
+      "title": "Northstar Grid Telemetry — Mid-Incident Response Lifecycle Sequencing",
+      "scenario": "Northstar Grid Telemetry maintains documented incident response playbooks, pre-staged forensic jump bags, and centralized SIEM logging across all regional substations (Preparation complete). Ten minutes ago, a SIEM correlation rule triggered a high-severity alert indicating that an engineering workstation (SUB-ENG-04) initiated unauthorized SMB (TCP 445) sessions to three internal file servers and executed an unrecognized binary (Detection complete). The SOC analyst on duty verified that the alert is a true positive, thoroughly reviewed the EDR process tree and netflow logs to determine the full scope of affected hosts and accounts, and confirmed the workstation has not yet been isolated from the substation VLAN (Analysis complete).",
+      "instructions": "Arrange the REMAINING phases of the 7-step incident response lifecycle in the exact chronological order the incident response team must execute them from this point forward.",
+      "items": [
+        "Recovery",
+        "Eradication",
+        "Lessons Learned",
+        "Containment"
+      ],
+      "answer": [
+        "Containment",
+        "Eradication",
+        "Recovery",
+        "Lessons Learned"
+      ],
+      "rationale": "The full 7-step incident response chain is Preparation → Detection → Analysis → Containment → Eradication → Recovery → Lessons Learned (where Analysis is its own distinct phase following Detection). Because the scenario explicitly establishes that Preparation (playbooks and logging in place), Detection (SIEM alert triggered), and Analysis (analyst confirmed the incident and scoped the affected hosts/accounts via EDR and netflow logs) have already been completed, only four phases remain:\n\n1. Containment: Isolate/quarantine SUB-ENG-04 and any affected file servers from the network (keeping SUB-ENG-04 powered on to preserve volatile RAM artifacts) to stop further lateral movement.\n2. Eradication: Remove the malicious binary, clear persistence mechanisms, and revoke/reset compromised credentials.\n3. Recovery: Restore affected systems from verified clean backups that predate the compromise and validate system integrity before returning them to production.\n4. Lessons Learned: Conduct a post-incident review to document root causes and update security controls and playbooks.\n\nPlacing Eradication or Recovery before Containment is incorrect because attempting to delete malware or restore backups before isolating the host allows the attacker or worm to re-infect systems laterally during remediation."
+    },
+    {
+      "id": "g3",
+      "type": "log-analysis",
+      "title": "Helios Avionics Manufacturing — Multi-Source SIEM & Endpoint Telemetry Triage",
+      "scenario": "The SOC at Helios Avionics Manufacturing (legitimate corporate domain: heliosavionics.com) is investigating an overnight alert cluster involving the DMZ Supplier Portal (172.24.10.18), an internal Engineering Workstation ENG-WS-14 (172.24.30.42), and the internal Active Directory Domain Controller DC-PROD-02 (172.24.5.10). Neither the DMZ Supplier Portal nor engineering workstations are authorized to authenticate to DC-PROD-02 using service accounts.",
+      "instructions": "Review the correlated telemetry log excerpt below and answer the four triage questions that follow.",
+      "log": "2026-11-10 02:11:03Z [DNS-GW]      INFO  172.24.5.10:54112 -> 132.163.96.1:123 UDP NTP stratum-1 clock sync OK\n2026-11-10 02:14:19Z [PROXY-OUT]   WARN  172.24.30.42 user=dmercer GET https://sso.helios-avionics.com/login 200 OK (referer: mail-attachment)\n2026-11-10 02:14:47Z [PROXY-OUT]   INFO  172.24.30.42 user=dmercer POST https://sso.helios-avionics.com/auth/submit 302 Redirect\n2026-11-10 02:18:04Z [WAF-DMZ]     WARN  203.0.113.91 -> 172.24.10.18:443 GET /admin/ 404; GET /backup/ 404; GET /config.bak 404; GET /db_dump/ 404 (460 paths in 8s)\n2026-11-10 02:21:11Z [EDR-ENG-WS-14] INFO  Process cad_render.exe (signed: HeliosCAD) CPU=14% RAM=86% Disk=2% — normal engineering workload\n2026-11-10 02:23:05Z [EDR-ENG-WS-14] ALERT Unsigned binary C:\\Users\\Public\\cad_patch_helper.exe spawned powershell.exe -nop -w hidden -enc SQBFAFgA...\n2026-11-10 02:23:07Z [EDR-ENG-WS-14] ALERT Registry modified: HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run\\CADSync -> C:\\Users\\Public\\cad_patch_helper.exe\n2026-11-10 02:24:00Z [HELP-DESK]   NOTE  Ticket #8841 from dmercer (ENG-WS-14): 'Browser keeps freezing and showing pop-up windows; network feels sluggish.'\n2026-11-10 02:26:12Z [DC-PROD-02]  WARN  Auth failure (6x) user=svc_inventory from 172.24.10.18:51904 proto=SMB (TCP/445) reason=BAD_PASSWORD\n2026-11-10 02:26:19Z [DC-PROD-02]  ALERT Auth ACCEPTED user=svc_inventory from 172.24.10.18:51910 proto=SMB (TCP/445) session=0x94A2\n2026-11-10 02:27:02Z [DC-PROD-02]  ALERT Process tree: services.exe -> cmd.exe -> net.exe localgroup Administrators svc_inventory /add\n2026-11-10 02:29:44Z [FW-PERIM]    ALERT 172.24.5.10:49881 -> 198.51.100.77:443 TCP bytes_out=2,415,919,104 (2.4 GB sustained outbound stream)\n2026-11-10 02:30:00Z [DNS-GW]      INFO  No abnormal DNS query volume or NXDOMAIN spikes detected across internal zones.",
+      "questions": [
+        {
+          "prompt": "1. Which observable event in the telemetry represents a CONFIRMED malware Indicator of Compromise (IOC) on ENG-WS-14 rather than a general symptom or benign activity?",
+          "options": [
+            "User help-desk report of browser freezes, pop-up windows, and sluggish network performance on ENG-WS-14",
+            "Execution of unsigned C:\\Users\\Public\\cad_patch_helper.exe spawning hidden encoded PowerShell and adding a Registry Run key",
+            "Process cad_render.exe consuming 86% RAM on ENG-WS-14 during overnight operation",
+            "Outbound UDP port 123 communication from 172.24.5.10 to external IP 132.163.96.1"
+          ],
+          "answer": 1
+        },
+        {
+          "prompt": "2. On DC-PROD-02, the attacker used valid credentials after six failed attempts over SMB (TCP 445) and invoked built-in OS binaries (cmd.exe -> net.exe) without dropping a file or generating abnormal DNS traffic. Which detection method would have identified this compromise pattern earliest?",
+          "options": [
+            "Heuristic and behavioral analysis (baseline anomaly detection)",
+            "Static file-signature antivirus scanning",
+            "Recursive DNS query logging and sinkholing",
+            "Perimeter firewall port filtering on TCP port 443"
+          ],
+          "answer": 0
+        },
+        {
+          "prompt": "3. How should the attacker's lookalike credential-harvesting domain (sso.helios-avionics.com vs. heliosavionics.com) at 02:14:19Z and the rapid 460-path HTTP directory probing on 172.24.10.18 at 02:18:04Z be classified?",
+          "options": [
+            "Sender email header spoofing followed by Lateral Movement",
+            "On-path MAC spoofing followed by Privilege Escalation",
+            "Typosquatting followed by Reconnaissance",
+            "DNS cache poisoning followed by Data Exfiltration"
+          ],
+          "answer": 2
+        },
+        {
+          "prompt": "4. What is the correct immediate Containment action for workstation ENG-WS-14 (172.24.30.42)?",
+          "options": [
+            "Immediately shut down ENG-WS-14 and disconnect its power cord to terminate the hidden PowerShell process",
+            "Reimage ENG-WS-14 over the network using a clean golden OS image prior to isolating the port",
+            "Leave ENG-WS-14 connected to the production VLAN so the SOC can monitor the attacker's commands in real time",
+            "Isolate/quarantine ENG-WS-14 from the network at the switch/EDR layer while keeping the workstation powered ON"
+          ],
+          "answer": 3
+        }
+      ],
+      "rationale": "Sub-question 1 (Confirmed IOC): Index 1 is correct. Unsigned C:\\Users\\Public\\cad_patch_helper.exe spawning hidden Base64-encoded PowerShell and modifying HKCU\\...\\Run for persistence is a definitive malware IOC. Browser pop-ups and sluggishness (Index 0) are general symptoms, signed cad_render.exe using 86% RAM (Index 2) is normal CAD usage, and UDP 123 (Index 3) is standard NTP time synchronization.\n\nSub-question 2 (Detection Method): Index 0 is correct. Because the attacker authenticated with a valid service account (svc_inventory) after brute-forcing over internal SMB (TCP 445) and used native OS binaries (cmd.exe -> net.exe) with no abnormal DNS spikes, static antivirus signatures (Index 1), DNS logging (Index 2), and perimeter TCP 443 filtering (Index 3) will not catch the activity. Heuristic/behavioral analysis detects the deviation from baseline login failure counts, DMZ-to-DC authentication source, and privilege-group modification.\n\nSub-question 3 (Attack & Kill-Chain Classification): Index 2 is correct. Registering a hyphenated lookalike domain (helios-avionics.com instead of heliosavionics.com) is typosquatting (whereas spoofing forges the legitimate domain in headers), and probing 460 directory paths (/admin/, /backup/, /config.bak) on the DMZ web server is Reconnaissance (directory enumeration).\n\nSub-question 4 (First Containment Action): Index 3 is correct. Proper containment disconnects/quarantines the infected endpoint from the network while keeping the machine powered ON so volatile forensic artifacts in RAM (running processes, decoded PowerShell payloads, network sockets) are preserved. Powering off the host (Index 0) destroys RAM evidence, reimaging before containment/analysis (Index 1) is premature Eradication/Recovery that wipes evidence, and leaving the host online uncontained (Index 2) allows continued C2 and lateral spread."
+    },
+    {
+      "id": "g4",
+      "type": "multi-select",
+      "title": "Kestrel Biopharma — Quarterly Federated SSO & Privileged Access Review",
+      "scenario": "You are conducting a quarterly Identity and Access Management (IAM) audit at Kestrel Biopharma. Employee and application identities authenticate through a federated Single Sign-On (SSO) Identity Provider (IDP-KESTREL) via SAML assertions to the Laboratory Information Management System (LIMS) portal, which reads and writes sample records on backend database server DB-LIMS-01.\n\nCorporate IAM Policy mandates:\n• Strict enforcement of the principle of least privilege across all human and non-human accounts.\n• Immediate revocation of access upon employment termination.\n• Strongest multi-factor authentication (company-issued smart card + password) and role separation for all administrative personnel.\n• Individual accountability (AAA) for all privileged actions.",
+      "instructions": "Review the eight account configurations below and select ALL accounts whose access permissions or authentication settings violate policy and MUST BE CHANGED (Select 5).",
+      "options": [
+        "intern_mchen (Summer QA Intern) — Assigned Read/Write access in LIMS; job duties consist solely of viewing completed batch reports and forwarding summaries to senior chemists.",
+        "clerk_rpatel (Senior Lab Records Specialist) — Assigned Read/Write access in LIMS; job duties require creating, updating, and deleting laboratory sample records daily.",
+        "jdoe_packaging (Former Packaging Line Lead) — Account remains Enabled with Read/Write access in IDP-KESTREL; HR records show the employee was terminated for cause 22 days ago.",
+        "svc_lims_db (LIMS Portal Database Service Account) — Assigned full Database & Domain Administrator privileges on DB-LIMS-01 to perform routine Create, Read, Update, and Delete (CRUD) queries for the LIMS web app.",
+        "adm_akowalski (Lead Systems Administrator) — Authenticates to privileged sessions using a password plus a company-issued PIV smart card, and uses a separate standard user account (akowalski) for daily email and web browsing.",
+        "noc_shared_admin (Third-Shift NOC Administrator Account) — Shared privileged account used by four overnight contractors with a single common password to run maintenance scripts.",
+        "adm_blarson (Senior Database Administrator) — Authenticates to his primary Administrator SSO account via password plus an SMS PIN sent to his personal smartphone, and uses that same Administrator account for daily web browsing and email.",
+        "auditor_fda02 (External Regulatory Inspector) — Provisioned with Just-in-Time (JIT) Read-Only access to compliance logs that automatically expires at the end of a 48-hour inspection window."
+      ],
+      "answer": [0, 2, 3, 5, 6],
+      "selectCount": 5,
+      "rationale": "The five accounts that violate policy and must be changed are indices 0, 2, 3, 5, and 6:\n• [0] intern_mchen: Interns whose duties only require viewing records must be restricted to Read-Only access, not Read/Write.\n• [2] jdoe_packaging: Terminated employees must have all access revoked immediately upon offboarding (set to No Access / Disabled).\n• [3] svc_lims_db: Over-privileged service accounts are a primary lateral movement and privilege escalation vector. Because the application only performs routine CRUD operations, its service account must be downgraded from Administrator to Read/Write (matching the operational level of a records clerk).\n• [5] noc_shared_admin: Shared group administrator accounts destroy non-repudiation and individual accounting (AAA). The shared account must be deleted and replaced with individual privileged accounts for each administrator.\n• [6] adm_blarson: Violates two administrative policies — using a privileged admin account for routine daily work/web browsing (requires a separate standard user account) and relying on SMS OTPs to a personal cell phone instead of a company-issued smart card for administrative MFA.\n\nWhy the remaining three accounts are compliant and must NOT be selected:\n• [1] clerk_rpatel: Read/Write access is the exact least-privilege level required for a clerk performing daily CRUD operations.\n• [4] adm_akowalski: Properly enforces company-issued smart card MFA and separates privileged administration from daily unprivileged user tasks.\n• [7] auditor_fda02: Properly applies Just-in-Time (JIT) time-bound access and Read-Only least privilege for an external auditor."
+    }
+  ]
+}

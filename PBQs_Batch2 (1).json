@@ -1,0 +1,183 @@
+{
+  "title": "Security+ PBQ Sprint — Generated Set 1 (Batch 2)",
+  "timeLimitMin": 25,
+  "questions": [
+    {
+      "id": "g5",
+      "type": "log-analysis",
+      "title": "Solstice Semiconductor — Nmap Reconnaissance & Port State Analysis",
+      "scenario": "You are conducting an authorized internal penetration test for Solstice Semiconductor from your assessment workstation RT-SCAN-03 (10.140.12.9). Your team lead tasks you with evaluating a core infrastructure host at 10.140.12.75 (FAB-DIR-01.solsticesemi.internal). You run an initial TCP SYN scan against the target and capture the output below, where the service column has been redacted.",
+      "instructions": "Analyze the Nmap scan output below and answer the five technical questions that follow.",
+      "log": "Starting Nmap 7.94 ( https://nmap.org ) at 2026-11-10 09:15 EST\nNmap scan report for FAB-DIR-01.solsticesemi.internal (10.140.12.75)\nHost is up (0.0018s latency).\nNot shown: 990 closed tcp ports (reset)\nPORT     STATE    SERVICE\n22/tcp   closed   [REDACTED]\n53/tcp   open     [REDACTED]\n88/tcp   open     [REDACTED]\n110/tcp  closed   [REDACTED]\n389/tcp  open     [REDACTED]\n443/tcp  open     [REDACTED]\n445/tcp  open     [REDACTED]\n636/tcp  open     [REDACTED]\n1433/tcp filtered [REDACTED]\n3389/tcp filtered [REDACTED]\nMAC Address: 00:1B:63:84:45:E6 (Solstice Enterprise Switching)\n\nNmap done: 1 IP address (1 host up) scanned in 1.42 seconds",
+      "questions": [
+        {
+          "prompt": "1. Based strictly on the ports in the 'open' state on 10.140.12.75, which combination of services is actively listening for connections?",
+          "options": [
+            "DNS, Kerberos, LDAP, HTTPS, SMB, and LDAPS",
+            "SSH, POP3, Microsoft SQL Server, and RDP",
+            "DNS, Kerberos, LDAP, HTTPS, SMTPS, and LDAPS",
+            "DNS, HTTP, TACACS+, LDAP, SMB, and IMAPS"
+          ],
+          "answer": 0
+        },
+        {
+          "prompt": "2. How should the 'filtered' state on ports 1433/tcp (Microsoft SQL Server) and 3389/tcp (RDP) be interpreted compared to the 'closed' state on ports 22/tcp and 110/tcp?",
+          "options": [
+            "Ports 1433 and 3389 returned a TCP RST packet proving no service is listening, whereas ports 22 and 110 silently dropped the probes",
+            "A firewall, packet filter, or ACL is blocking or dropping probes to ports 1433 and 3389 so Nmap cannot determine whether they are open or closed, whereas ports 22 and 110 are reachable but have no listening service",
+            "Ports 1433 and 3389 are open exclusively over UDP rather than TCP, whereas ports 22 and 110 require TLS client authentication",
+            "Ports 1433 and 3389 completed the TCP three-way handshake but rejected the scanner's credentials, whereas ports 22 and 110 are disabled in the BIOS"
+          ],
+          "answer": 1
+        },
+        {
+          "prompt": "3. Your team lead instructs you to run a follow-up scan from RT-SCAN-03 (10.140.12.9) against FAB-DIR-01 (10.140.12.75) that determines the Operating System, enumerates exact service versions, and scans all 65,535 TCP ports. Which command is syntactically valid and fulfills every requirement?",
+          "options": [
+            "10.140.12.75 nmap -O -sV -p-",
+            "nmap -O -sV -p- 10.140.12.9",
+            "nmap -O -sV -p- 10.140.12.75",
+            "nmap -sS --top-ports 2000 10.140.12.75"
+          ],
+          "answer": 2
+        },
+        {
+          "prompt": "4. You now need to check whether 10.140.12.75 exposes connectionless services such as SNMP polling (161), NTP (123), or TFTP (69), and you must also test its IPv6 interface. Which Nmap flags are required?",
+          "options": [
+            "-sT and -4",
+            "-sU and -6",
+            "-sS and -p 161,123,69",
+            "-sV and -A"
+          ],
+          "answer": 1
+        },
+        {
+          "prompt": "5. Which timing flag must be used to run the slowest possible scan to evade Network Intrusion Detection System (NIDS) alerts, and which single flag bundles OS detection, version detection, script scanning, and traceroute when stealth is not needed?",
+          "options": [
+            "-T5 for slowest NIDS evasion; -sV for the aggressive multi-feature bundle",
+            "-T0 for slowest NIDS evasion; -A for the aggressive multi-feature bundle",
+            "-T0 for fastest insane scan speed; -O for the aggressive multi-feature bundle",
+            "-T1 for fastest insane scan speed; -p- for the aggressive multi-feature bundle"
+          ],
+          "answer": 1
+        }
+      ],
+      "rationale": "Sub-question 1 (Open Services): Index 0 is correct. The six 'open' TCP ports are 53 (DNS), 88 (Kerberos), 389 (LDAP), 443 (HTTPS), 445 (SMB — Server Message Block), and 636 (LDAPS). Index 1 lists the closed/filtered ports (22 SSH, 110 POP3, 1433 SQL Server, 3389 RDP). Index 2 falls for the trap of confusing TCP 445 (SMB) with TCP 465 (SMTPS).\n\nSub-question 2 (Port States): Index 1 is correct. In Nmap, 'filtered' means a firewall, ACL, or packet filter is dropping the probe packets (or returning ICMP unreachable), preventing Nmap from knowing whether the port is open or closed. 'Closed' means the host is reachable on the network and responded with a TCP RST packet indicating no application is listening on that port.\n\nSub-question 3 (Follow-up Command Syntax): Index 2 is correct. Nmap syntax requires 'nmap [flags] [target]', where -O enables OS detection, -sV probes open ports for service/protocol versions, -p- scans all 65,535 ports, and 10.140.12.75 is the target IP. Index 0 puts the IP before nmap (invalid syntax), Index 1 scans the tester's own workstation IP (10.140.12.9), and Index 3 omits OS/version flags and only scans the top 2,000 ports.\n\nSub-question 4 (UDP & IPv6 Flags): Index 1 is correct. SNMP (161/162), NTP (123), and TFTP (69) run over UDP, requiring -sU, while -6 enables IPv6 scanning. Index 2 is the classic 'wrong protocol with right port' trap (-sS runs a TCP SYN scan against UDP port numbers).\n\nSub-question 5 (Timing & Aggressive Flags): Index 1 is correct. Nmap timing templates scale from -T0 (Paranoid — slowest speed for IDS evasion) to -T5 (Insane — fastest, noisiest speed), and -A is the aggressive bundle flag that combines -O (OS detection), -sV (version detection), -sC (default script scanning), and --traceroute."
+    },
+    {
+      "id": "g6",
+      "type": "matching",
+      "title": "Boreal Freight Clearinghouse — PKI & Certificate Format Troubleshooting",
+      "scenario": "During a cryptographic infrastructure audit at Boreal Freight Clearinghouse, your security team encounters six certificate-related artifacts and browser trust errors across web servers, Java appliances, and employee workstations.",
+      "instructions": "Match each observed PKI scenario or file artifact on the left to its exact technical classification or root-cause diagnosis on the right.",
+      "left": [
+        "1. A user's browser blocks access to https://intranet.borealfreight.local with an untrusted error; the server's X.509 certificate is valid through 2029, but its issuer (Boreal Enterprise Root CA) is absent from the workstation's local Trusted Root Certification Authorities store.",
+        "2. A systems engineer exports a password-protected archive file to migrate a web server's X.509 certificate TOGETHER WITH its private key onto a standby load balancer.",
+        "3. A certificate file opened in a text editor displays readable Base64 ASCII characters enclosed between '-----BEGIN CERTIFICATE-----' and '-----END CERTIFICATE-----'.",
+        "4. A certificate file exported for an embedded Java appliance consists of raw binary bytes that cannot be read as plain text in a standard text editor.",
+        "5. A file generated on a new web server starts with '-----BEGIN CERTIFICATE REQUEST-----' and contains the server's public key and Distinguished Name to send to a Certificate Authority for signing.",
+        "6. A vendor provides a certificate chain file containing the leaf and intermediate CA certificates so the admin can import the trust path, without including any private key."
+      ],
+      "right": [
+        "DER encoding (.der) — binary-encoded X.509 certificate",
+        "PKCS#7 bundle (.p7b) — certificate chain only, contains NO private key",
+        "Broken chain of trust — issuing Root CA missing from client trust store",
+        "PKCS#12 container (.pfx / .p12) — password-protected archive WITH private key",
+        "Certificate Signing Request (.csr) — unsigned request sent to CA (not a certificate)",
+        "PEM encoding (.pem) — Base64 ASCII-armored X.509 certificate"
+      ],
+      "answer": [
+        "Broken chain of trust — issuing Root CA missing from client trust store",
+        "PKCS#12 container (.pfx / .p12) — password-protected archive WITH private key",
+        "PEM encoding (.pem) — Base64 ASCII-armored X.509 certificate",
+        "DER encoding (.der) — binary-encoded X.509 certificate",
+        "Certificate Signing Request (.csr) — unsigned request sent to CA (not a certificate)",
+        "PKCS#7 bundle (.p7b) — certificate chain only, contains NO private key"
+      ],
+      "rationale": "1. Broken chain of trust: Even when a server certificate is unexpired and cryptographically valid, if the client workstation does not have the issuing Root CA certificate installed in its local Trusted Root CA store, the browser cannot validate the chain of trust.\n2. PKCS#12 container (.pfx / .p12): The .pfx and .p12 extensions represent password-protected PKCS#12 containers specifically designed to bundle and encrypt a private key alongside its X.509 certificate.\n3. PEM encoding (.pem): Privacy-Enhanced Mail (PEM) format encodes X.509 certificates in Base64 ASCII text bounded by '-----BEGIN CERTIFICATE-----' and '-----END CERTIFICATE-----' armor lines.\n4. DER encoding (.der): Distinguished Encoding Rules (DER) is the raw binary encoding of an X.509 certificate.\n5. Certificate Signing Request (.csr): Bounded by '-----BEGIN CERTIFICATE REQUEST-----', a CSR is an unsigned file containing the applicant's public key and identity metadata submitted to a CA to request a signed certificate; neither .csr nor .key files are certificates.\n6. PKCS#7 bundle (.p7b): A .p7b file stores one or more X.509 certificates and intermediate CA chains for trust-path distribution, but never contains a private key (a common exam trap contrasting .p7b with .pfx/.p12)."
+    },
+    {
+      "id": "g7",
+      "type": "toggles",
+      "title": "Ironclad Water Authority — Public-Facing Web & SSH Bastion Server Hardening",
+      "scenario": "Ironclad Water Authority deploys a dual-role Linux/Windows hybrid server named PORTAL-GW-08 in its perimeter DMZ. The server's sole authorized functions are:\n1. Hosting a public customer payment web portal over encrypted HTTPS (TCP 443).\n2. Accepting remote administrative SSH (TCP 22) connections exclusively from engineers on the internal Management Subnet (10.88.99.0/24) using asymmetric cryptographic keys.\n\nPORTAL-GW-08 does not host file shares, print services, or legacy applications. A pre-deployment vulnerability scan flagged multiple insecure default settings.",
+      "instructions": "Configure the 10 system hardening toggles below to establish a secure least-functionality baseline for PORTAL-GW-08. Set required secure controls to ON (true) and unsafe or unnecessary features to OFF (false).",
+      "items": [
+        {
+          "label": "1. TLS 1.3 cryptographic protocol on the public HTTPS listener (TCP 443)",
+          "answer": true
+        },
+        {
+          "label": "2. SSL 3.0 and TLS 1.0 legacy cipher suite fallback support",
+          "answer": false
+        },
+        {
+          "label": "3. SSH public-key authentication enforced with password login disabled (PasswordAuthentication no)",
+          "answer": true
+        },
+        {
+          "label": "4. Direct root account login permitted over SSH (PermitRootLogin yes)",
+          "answer": false
+        },
+        {
+          "label": "5. Telnet daemon (TCP 23) enabled as an emergency out-of-band CLI fallback",
+          "answer": false
+        },
+        {
+          "label": "6. SMBv1 (Server Message Block v1 on TCP 445) file-sharing service",
+          "answer": false
+        },
+        {
+          "label": "7. Local Guest account and anonymous session enumeration",
+          "answer": false
+        },
+        {
+          "label": "8. Empty passwords allowed for automated service accounts (PermitEmptyPasswords yes)",
+          "answer": false
+        },
+        {
+          "label": "9. Host-based firewall rule restricting inbound SSH (TCP 22) strictly to Management Subnet 10.88.99.0/24",
+          "answer": true
+        },
+        {
+          "label": "10. Unattended automatic security updates and Full-Disk Encryption (FDE) for data at rest",
+          "answer": true
+        }
+      ],
+      "rationale": "Controls that must be set to ON (true) [Items 1, 3, 9, 10]:\n• Item 1 (TLS 1.3): Required to serve the public HTTPS portal securely on TCP 443.\n• Item 3 (SSH key-based authentication / PasswordAuthentication no): Enforces asymmetric key authentication and blocks SSH password brute-forcing.\n• Item 9 (Host firewall restricting TCP 22 to 10.88.99.0/24): Prevents public internet hosts (Any / 0.0.0.0/0) from probing or brute-forcing the SSH daemon.\n• Item 10 (Unattended security updates & Full-Disk Encryption): Remediates missing patch vulnerabilities automatically on standalone perimeter hosts and protects stored data at rest.\n\nControls that must be set to OFF (false) [Items 2, 4, 5, 6, 7, 8]:\n• Item 2 (SSL 3.0 / TLS 1.0): Deprecated, cryptographically broken protocols vulnerable to downgrade attacks (e.g., POODLE/BEAST).\n• Item 4 (PermitRootLogin yes): Direct root login over SSH must be disabled (PermitRootLogin no) so admins authenticate with individual accounts and escalate via sudo.\n• Item 5 (Telnet TCP 23): Transmits credentials in plaintext; never keep Telnet enabled as an SSH fallback.\n• Item 6 (SMBv1 TCP 445): Legacy file-sharing protocol vulnerable to remote code execution worms and unneeded on a web/SSH server.\n• Item 7 (Local Guest account): Violates individual accountability and must always be disabled.\n• Item 8 (PermitEmptyPasswords yes): Blank passwords on service accounts allow trivial unauthenticated compromise."
+    },
+    {
+      "id": "g8",
+      "type": "dropdown-grid",
+      "title": "Redwood Clinical Diagnostics — Federated SSO Access Level Provisioning",
+      "scenario": "Redwood Clinical Diagnostics is performing a role-based access review for its Claims & Billing Portal. Users authenticate through federated Single Sign-On (IDP-REDWOOD) via SAML to the portal, which queries and modifies records on backend database server SQL-CLAIMS-01.\n\nRole & Account Audit Findings:\n• klee_intern (Summer Compliance Intern): Assigned to review finalized claim summaries and pass read-only observations to senior auditors. Must not create, alter, or delete records.\n• mvasquez_adj (Claims Adjuster): Employment was terminated for cause last week following an HR investigation, but the account remains active in IDP-REDWOOD.\n• tnguyen_proc (Senior Claims Processor): Responsible for daily Create, Read, Update, and Delete (CRUD) processing of patient insurance claims in the portal.\n• svc_claims_engine (Claims Portal Database Service Account): Used by the web application to execute the exact same CRUD database operations on SQL-CLAIMS-01 as a Senior Claims Processor; currently provisioned with full Admin privileges.\n• adm_csterling_priv (Dedicated IAM & Database Schema Administrator): Dedicated privileged account (protected by password + company-issued smart card MFA, separate from C. Sterling's daily user account) responsible for altering database tables, managing SAML federation trust, and provisioning user roles.",
+      "instructions": "Select the single appropriate access level (No access, Read-only, Read-write, or Admin) for each of the five accounts to enforce the principle of least privilege.",
+      "columns": ["Access"],
+      "colOptions": {
+        "Access": ["No access", "Read-only", "Read-write", "Admin"]
+      },
+      "rows": [
+        {
+          "label": "Row 1 — klee_intern (Summer Compliance Intern — views claim summaries only)",
+          "answer": ["Read-only"]
+        },
+        {
+          "label": "Row 2 — mvasquez_adj (Former Claims Adjuster — terminated for cause last week)",
+          "answer": ["No access"]
+        },
+        {
+          "label": "Row 3 — tnguyen_proc (Senior Claims Processor — performs daily CRUD claim updates)",
+          "answer": ["Read-write"]
+        },
+        {
+          "label": "Row 4 — svc_claims_engine (Claims Portal Service Account — executes routine CRUD queries)",
+          "answer": ["Read-write"]
+        },
+        {
+          "label": "Row 5 — adm_csterling_priv (Dedicated IAM & Database Schema Administrator)",
+          "answer": ["Admin"]
+        }
+      ],
+      "rationale": "• Row 1 (klee_intern -> Read-only): The intern's duties only require viewing records and passing information to staff; granting Read-write violates least privilege, while No access prevents required job duties.\n• Row 2 (mvasquez_adj -> No access): Terminated employees must have access revoked immediately upon offboarding to prevent insider sabotage or data theft.\n• Row 3 (tnguyen_proc -> Read-write): Standard operational CRUD duties (creating, updating, and deleting claims records) require Read-write permissions, not full system/schema Admin rights.\n• Row 4 (svc_claims_engine -> Read-write): Service accounts must be restricted to the minimum privilege needed for their application function. Because the portal only requires CRUD record access matching the Senior Claims Processor, leaving it at Admin creates a severe privilege-escalation and lateral-movement risk if the web app is compromised.\n• Row 5 (adm_csterling_priv -> Admin): Modifying SAML federation configurations, provisioning roles, and altering database schemas are true administrative functions properly isolated to a dedicated, smart-card-protected privileged account."
+    }
+  ]
+}
