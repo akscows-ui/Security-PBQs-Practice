@@ -212,7 +212,7 @@ function isAnswered(q){
   switch(q.type){
     case 'order': return !!state.touched[q.id];
     case 'dropdown-grid': return a.every(r => r.every(v => v !== ""));
-    case 'multi-select': return a.length > 0;
+    case 'multi-select': return q.selectCount ? a.length === q.selectCount : a.length > 0;
     case 'log-analysis': return a.every(v => v >= 0);
     case 'toggles': return a.every(v => v !== null);
     case 'matching': return a.every(v => v !== "");
