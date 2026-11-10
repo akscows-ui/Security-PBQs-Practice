@@ -93,7 +93,7 @@ const PBQ_DATA = {
     {
       id: "sample-order", type: "order",
       title: "SAMPLE — Incident Response Sequencing (mechanics demo)",
-      scenario: "These two sample questions use scenarios you have already worked, so you can test the simulator itself. The scored set replaces this data after the audit.\n\nA hospital's EDR alert flags a billing workstation beaconing to an unknown external IP every 60 seconds. The incident is confirmed real. Nothing has been isolated yet.",
+      scenario: "These two sample questions use scenarios you have already worked, so you can test the simulator itself. The scored set replaces this data after the audit.\n\nA hospital's EDR alert fl[...]",
       instructions: "Arrange ALL seven incident response phases in the order they occur.",
       items: ["Containment","Lessons Learned","Preparation","Recovery","Analysis","Eradication","Detection"],
       answer: ["Preparation","Detection","Analysis","Containment","Eradication","Recovery","Lessons Learned"],
@@ -102,7 +102,7 @@ const PBQ_DATA = {
     {
       id: "sample-acl", type: "dropdown-grid",
       title: "SAMPLE — Firewall Rule Builder (mechanics demo)",
-      scenario: "Northgate Library. The public catalog web server sits in the DMZ at 172.20.3.15. Policy: (1) the public may reach it over secure web traffic only; (2) nothing in the DMZ may initiate connections to the internal LAN (172.20.5.0/24).",
+      scenario: "Northgate Library. The public catalog web server sits in the DMZ at 172.20.3.15. Policy: (1) the public may reach it over secure web traffic only; (2) nothing in the DMZ may initiate [...]",
       instructions: "Complete both rules. Every field must be set.",
       columns: ["Action","Protocol","Source","Destination","Port"],
       colOptions: {
@@ -120,12 +120,24 @@ const PBQ_DATA = {
     }
   ]
 };
-/* ================= ENGINE ================= */
-const state = { idx: 0, answers: {}, flags: new Set(), touched: {}, started: false, submitted: false, deadline: null, tick: null };
+
+const state = {
+  idx: 0,
+  answers: {},
+  flags: new Set(),
+  touched: new Set(),
+  started: false,
+  submitted: false,
+  deadline: null,
+  tick: null
+};
+
 const app = document.getElementById('app');
 const nav = document.getElementById('nav');
+
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
 function shuffle(a){ a=[...a]; for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function touch(qid){ state.touched.add(qid); }
 
 function startScreen(){
   document.getElementById('qcount').textContent = PBQ_DATA.questions.length + " PBQs";
@@ -139,15 +151,22 @@ function startScreen(){
   <p><b>Time limit:</b> ${PBQ_DATA.timeLimitMin} minutes for ${PBQ_DATA.questions.length} PBQs.</p>
   <button class="btn" onclick="begin()">Begin</button></div>`;
 }
+
 function begin(){
-  state.started = true; state.answers = {}; state.touched = {}; state.flags.clear();
   if(state.tick) clearInterval(state.tick);
+  state.started = true;
+  state.submitted = false;
+  state.answers = {};
+  state.flags = new Set();
+  state.touched = new Set();
   PBQ_DATA.questions.forEach(q => { state.answers[q.id] = blankAnswer(q); });
   state.deadline = Date.now() + PBQ_DATA.timeLimitMin*60000;
+  state.idx = 0;
   nav.style.display = 'flex';
   state.tick = setInterval(tickTimer, 500); tickTimer();
   goto(0);
 }
+
 function tickTimer(){
   const left = Math.max(0, state.deadline - Date.now());
   const m = Math.floor(left/60000), s = Math.floor(left%60000/1000);
@@ -156,6 +175,7 @@ function tickTimer(){
   el.classList.toggle('low', left < 300000);
   if(left === 0 && !state.submitted){ finishExam(true); }
 }
+
 function blankAnswer(q){
   switch(q.type){
     case 'order': return shuffle(q.items);
@@ -164,12 +184,15 @@ function blankAnswer(q){
     case 'log-analysis': return q.questions.map(() => -1);
     case 'toggles': return q.items.map(() => null);
     case 'matching': return q.left.map(() => "");
+    default: return null;
   }
 }
+
 function goto(i){
   if(i < 0 || i >= PBQ_DATA.questions.length) return;
   state.idx = i; render();
 }
+
 function render(){
   const q = PBQ_DATA.questions[state.idx];
   document.getElementById('qcount').textContent = "Question " + (state.idx+1) + " of " + PBQ_DATA.questions.length;
@@ -184,15 +207,20 @@ function render(){
   app.innerHTML = h;
   if(q.type === 'order') wireDrag(q);
 }
+
 function toggleFlag(){
   const q = PBQ_DATA.questions[state.idx];
   state.flags.has(q.id) ? state.flags.delete(q.id) : state.flags.add(q.id);
   render();
 }
+
 function resetQ(){
   const q = PBQ_DATA.questions[state.idx];
-  state.answers[q.id] = blankAnswer(q); delete state.touched[q.id]; render();
+  state.answers[q.id] = blankAnswer(q);
+  state.touched.delete(q.id);
+  render();
 }
+
 function openPalette(){
   const g = document.getElementById('pgrid'); g.innerHTML = '';
   PBQ_DATA.questions.forEach((q, i) => {
@@ -206,19 +234,22 @@ function openPalette(){
   });
   document.getElementById('palette').style.display = 'block';
 }
+
 function closePalette(){ document.getElementById('palette').style.display = 'none'; }
+
 function isAnswered(q){
   const a = state.answers[q.id];
   switch(q.type){
-    case 'order': return !!state.touched[q.id];
-    case 'dropdown-grid': return a.every(r => r.every(v => v !== ""));
+    case 'order': return state.touched.has(q.id) && a.length > 0;
+    case 'dropdown-grid': return Array.isArray(a) && a.every(r => Array.isArray(r) && r.every(v => v !== ""));
     case 'multi-select': return q.selectCount ? a.length === q.selectCount : a.length > 0;
-    case 'log-analysis': return a.every(v => v >= 0);
-    case 'toggles': return a.every(v => v !== null);
-    case 'matching': return a.every(v => v !== "");
+    case 'log-analysis': return Array.isArray(a) && a.every(v => v >= 0);
+    case 'toggles': return Array.isArray(a) && a.every(v => v !== null);
+    case 'matching': return Array.isArray(a) && a.every(v => v !== "");
+    default: return false;
   }
 }
-/* ================= RENDERERS ================= */
+
 const renderers = {
   'order': function(q){
     const a = state.answers[q.id];
@@ -271,12 +302,15 @@ const renderers = {
     return h + `</table>`;
   }
 };
-function touch(qid){ state.touched[qid] = true; }
+
 function moveItem(qid, i, d){
   const a = state.answers[qid]; const j = i + d;
   if(j < 0 || j >= a.length) return;
-  [a[i], a[j]] = [a[j], a[i]]; touch(qid); render();
+  [a[i], a[j]] = [a[j], a[i]];
+  touch(qid);
+  render();
 }
+
 function wireDrag(q){
   const els = app.querySelectorAll('.orditem'); let from = null;
   els.forEach(el => {
@@ -285,30 +319,61 @@ function wireDrag(q){
     el.addEventListener('dragover', e => e.preventDefault());
     el.addEventListener('drop', e => {
       e.preventDefault(); const to = +el.dataset.i; const a = state.answers[q.id];
-      const [it] = a.splice(from, 1); a.splice(to, 0, it); touch(q.id); render();
+      const [it] = a.splice(from, 1); a.splice(to, 0, it);
+      touch(q.id);
+      render();
     });
   });
 }
-function setGrid(qid, r, c, v){ state.answers[qid][r][c] = v; touch(qid); }
+
+function setGrid(qid, r, c, v){ state.answers[qid][r][c] = v; touch(qid); render(); }
+
 function toggleMulti(qid, i){
   const a = state.answers[qid]; const p = a.indexOf(i);
-  p >= 0 ? a.splice(p, 1) : a.push(i); touch(qid); render();
+  p >= 0 ? a.splice(p, 1) : a.push(i); 
+  touch(qid); render();
 }
+
 function setLog(qid, s, o){ state.answers[qid][s] = o; touch(qid); render(); }
 function setToggle(qid, i, v){ state.answers[qid][i] = v; touch(qid); render(); }
-function setMatch(qid, i, v){ state.answers[qid][i] = v; touch(qid); }
-/* ================= SCORING ================= */
+function setMatch(qid, i, v){ state.answers[qid][i] = v; touch(qid); render(); }
+
 function scoreQ(q){
   const a = state.answers[q.id];
   switch(q.type){
-    case 'order': { if(!state.touched[q.id]) return 0; const hit = q.answer.filter((v, i) => a[i] === v).length; return hit / q.answer.length; }
-    case 'dropdown-grid': { let t = 0, n = 0; q.rows.forEach((r, ri) => r.answer.forEach((v, ci) => { n++; if(a[ri][ci] === v) t++; })); return t / n; }
-    case 'multi-select': { const key = new Set(q.answer); const got = new Set(a); let t = 0; q.options.forEach((_, i) => { if(key.has(i) === got.has(i)) t++; }); return t / q.options.length; }
-    case 'log-analysis': { const t = q.questions.filter((s, si) => a[si] === s.answer).length; return t / q.questions.length; }
-    case 'toggles': { const t = q.items.filter((it, i) => a[i] === it.answer).length; return t / q.items.length; }
-    case 'matching': { const t = q.left.filter((_, i) => a[i] === q.answer[i]).length; return t / q.left.length; }
+    case 'order': {
+      if(!state.touched.has(q.id)) return 0;
+      const hit = q.answer.filter((v, i) => a[i] === v).length;
+      return hit / q.answer.length;
+    }
+    case 'dropdown-grid': {
+      let t = 0, n = 0;
+      q.rows.forEach((r, ri) => r.answer.forEach((v, ci) => { n++; if(a[ri][ci] === v) t++; }));
+      return t / n;
+    }
+    case 'multi-select': {
+      const key = new Set(q.answer);
+      const got = new Set(a);
+      let t = 0;
+      q.options.forEach((_, i) => { if(key.has(i) === got.has(i)) t++; });
+      return t / q.options.length;
+    }
+    case 'log-analysis': {
+      const t = q.questions.filter((s, si) => a[si] === s.answer).length;
+      return t / q.questions.length;
+    }
+    case 'toggles': {
+      const t = q.items.filter((it, i) => a[i] === it.answer).length;
+      return t / q.items.length;
+    }
+    case 'matching': {
+      const t = q.left.filter((_, i) => a[i] === q.answer[i]).length;
+      return t / q.left.length;
+    }
+    default: return 0;
   }
 }
+
 function correctText(q){
   switch(q.type){
     case 'order': return "Correct order: " + q.answer.join(" → ");
@@ -317,8 +382,10 @@ function correctText(q){
     case 'log-analysis': return q.questions.map(s => s.prompt + " → " + s.options[s.answer]).join("\n");
     case 'toggles': return q.items.map(it => it.label + ": " + (it.answer ? "ON" : "OFF")).join("\n");
     case 'matching': return q.left.map((l, i) => l + " → " + q.answer[i]).join("\n");
+    default: return "";
   }
 }
+
 function finishExam(auto){
   if(state.submitted) return;
   if(!auto && !confirm("Submit the exam now? Keys and scores will be revealed. This cannot be undone.")) return;
@@ -341,6 +408,7 @@ function finishExam(auto){
     <p style="margin-top:18px"><button class="btn" onclick="location.reload()">Retake</button></p></div>`;
   window.scrollTo(0, 0);
 }
+
 startScreen();
 </script>
 </body>
