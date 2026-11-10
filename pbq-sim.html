@@ -121,7 +121,7 @@ const PBQ_DATA = {
   ]
 };
 /* ================= ENGINE ================= */
-const state = { idx: 0, answers: {}, flags: new Set(), started: false, submitted: false, deadline: null, tick: null };
+const state = { idx: 0, answers: {}, flags: new Set(), touched: {}, started: false, submitted: false, deadline: null, tick: null };
 const app = document.getElementById('app');
 const nav = document.getElementById('nav');
 function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
@@ -140,7 +140,8 @@ function startScreen(){
   <button class="btn" onclick="begin()">Begin</button></div>`;
 }
 function begin(){
-  state.started = true; state.answers = {};
+  state.started = true; state.answers = {}; state.touched = {}; state.flags.clear();
+  if(state.tick) clearInterval(state.tick);
   PBQ_DATA.questions.forEach(q => { state.answers[q.id] = blankAnswer(q); });
   state.deadline = Date.now() + PBQ_DATA.timeLimitMin*60000;
   nav.style.display = 'flex';
@@ -190,7 +191,7 @@ function toggleFlag(){
 }
 function resetQ(){
   const q = PBQ_DATA.questions[state.idx];
-  state.answers[q.id] = blankAnswer(q); render();
+  state.answers[q.id] = blankAnswer(q); delete state.touched[q.id]; render();
 }
 function openPalette(){
   const g = document.getElementById('pgrid'); g.innerHTML = '';
@@ -209,7 +210,7 @@ function closePalette(){ document.getElementById('palette').style.display = 'non
 function isAnswered(q){
   const a = state.answers[q.id];
   switch(q.type){
-    case 'order': return true;
+    case 'order': return !!state.touched[q.id];
     case 'dropdown-grid': return a.every(r => r.every(v => v !== ""));
     case 'multi-select': return a.length > 0;
     case 'log-analysis': return a.every(v => v >= 0);
@@ -270,10 +271,11 @@ const renderers = {
     return h + `</table>`;
   }
 };
+function touch(qid){ state.touched[qid] = true; }
 function moveItem(qid, i, d){
   const a = state.answers[qid]; const j = i + d;
   if(j < 0 || j >= a.length) return;
-  [a[i], a[j]] = [a[j], a[i]]; render();
+  [a[i], a[j]] = [a[j], a[i]]; touch(qid); render();
 }
 function wireDrag(q){
   const els = app.querySelectorAll('.orditem'); let from = null;
@@ -283,23 +285,23 @@ function wireDrag(q){
     el.addEventListener('dragover', e => e.preventDefault());
     el.addEventListener('drop', e => {
       e.preventDefault(); const to = +el.dataset.i; const a = state.answers[q.id];
-      const [it] = a.splice(from, 1); a.splice(to, 0, it); render();
+      const [it] = a.splice(from, 1); a.splice(to, 0, it); touch(q.id); render();
     });
   });
 }
-function setGrid(qid, r, c, v){ state.answers[qid][r][c] = v; }
+function setGrid(qid, r, c, v){ state.answers[qid][r][c] = v; touch(qid); }
 function toggleMulti(qid, i){
   const a = state.answers[qid]; const p = a.indexOf(i);
-  p >= 0 ? a.splice(p, 1) : a.push(i); render();
+  p >= 0 ? a.splice(p, 1) : a.push(i); touch(qid); render();
 }
-function setLog(qid, s, o){ state.answers[qid][s] = o; render(); }
-function setToggle(qid, i, v){ state.answers[qid][i] = v; render(); }
-function setMatch(qid, i, v){ state.answers[qid][i] = v; }
+function setLog(qid, s, o){ state.answers[qid][s] = o; touch(qid); render(); }
+function setToggle(qid, i, v){ state.answers[qid][i] = v; touch(qid); render(); }
+function setMatch(qid, i, v){ state.answers[qid][i] = v; touch(qid); }
 /* ================= SCORING ================= */
 function scoreQ(q){
   const a = state.answers[q.id];
   switch(q.type){
-    case 'order': { const hit = q.answer.filter((v, i) => a[i] === v).length; return hit / q.answer.length; }
+    case 'order': { if(!state.touched[q.id]) return 0; const hit = q.answer.filter((v, i) => a[i] === v).length; return hit / q.answer.length; }
     case 'dropdown-grid': { let t = 0, n = 0; q.rows.forEach((r, ri) => r.answer.forEach((v, ci) => { n++; if(a[ri][ci] === v) t++; })); return t / n; }
     case 'multi-select': { const key = new Set(q.answer); const got = new Set(a); let t = 0; q.options.forEach((_, i) => { if(key.has(i) === got.has(i)) t++; }); return t / q.options.length; }
     case 'log-analysis': { const t = q.questions.filter((s, si) => a[si] === s.answer).length; return t / q.questions.length; }
